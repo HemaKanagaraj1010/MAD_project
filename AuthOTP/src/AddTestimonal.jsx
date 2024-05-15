@@ -1,83 +1,146 @@
-// TestimonialForm.js
-
 import React, { useState } from 'react';
-import { View, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { View, Button, TextInput, Alert, StyleSheet, ScrollView, ImageBackground } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 
-const TestimonialForm = () => {
+import backgroundImage from './images/addtest.jpg';
+
+const AddTestimonial = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [graduationYear, setGraduationYear] = useState('');
+  const [designation, setDesignation] = useState('');
+  const [company, setCompany] = useState('');
+  const [linkedin, setLinkedin] = useState(''); // New state for LinkedIn account
+  const [rollNo, setRollNo] = useState(''); // New state for roll number
   const [message, setMessage] = useState('');
 
   const handleSubmit = async () => {
     try {
+      if (!name || !email || !graduationYear || !designation || !company || !linkedin || !rollNo || !message) {
+        Alert.alert('Error', 'All fields are required.');
+        return;
+      }
+
       await firestore().collection('testimonials').add({
         name,
         email,
+        graduationYear,
+        designation,
+        company,
+        linkedin,
+        rollNo,
         message,
         timestamp: firestore.FieldValue.serverTimestamp()
       });
       Alert.alert('Success', 'Testimonial submitted successfully!');
-      // Optionally, clear the form after submission
-      setName('');
-      setEmail('');
-      setMessage('');
+      clearForm();
     } catch (error) {
       console.error('Error submitting testimonial: ', error);
       Alert.alert('Error', 'Failed to submit testimonial. Please try again later.');
     }
   };
 
+  const clearForm = () => {
+    setName('');
+    setEmail('');
+    setGraduationYear('');
+    setDesignation('');
+    setCompany('');
+    setLinkedin('');
+    setRollNo('');
+    setMessage('');
+  };
+
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Register Number"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={[styles.input, styles.messageInput]}
-        placeholder="Message"
-        value={message}
-        onChangeText={setMessage}
-        multiline
-        numberOfLines={4}
-      />
-      <Button title="Submit" onPress={handleSubmit} />
-    </View>
+    <ImageBackground source={backgroundImage} style={styles.background}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <TextInput
+          style={styles.input}
+          placeholder="Your Name *"
+          value={name}
+          onChangeText={setName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Your Email *"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Year of Graduation *"
+          value={graduationYear}
+          onChangeText={setGraduationYear}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Your Designation *"
+          value={designation}
+          onChangeText={setDesignation}
+        />
+          <TextInput
+          style={styles.input}
+          placeholder="Your Roll Number *"
+          value={rollNo}
+          onChangeText={setRollNo}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Your Company *"
+          value={company}
+          onChangeText={setCompany}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Your LinkedIn Account *"
+          value={linkedin}
+          onChangeText={setLinkedin}
+        />
+        <TextInput
+          style={[styles.input, styles.messageInput]}
+          placeholder="Your Testimonial *"
+          value={message}
+          onChangeText={setMessage}
+          multiline
+          numberOfLines={4}
+        />
+        <Button title="Submit" onPress={handleSubmit} />
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
+    resizeMode: 'cover',
     justifyContent: 'center',
-    alignItems: 'center',
+  },
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: 'center',
+    paddingTop: 250, // Move the form down
   },
   input: {
-    width: '80%',
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    marginBottom: 10,
+    height: 50,
+    borderWidth: 2,
+    borderColor: '#5DADE2',
+    borderRadius: 10,
+    marginBottom: 20,
     paddingHorizontal: 10,
+    backgroundColor: 'rgba(215, 228, 241, 0.7)', // Semi-transparent white background
+    color: '#333', // Change text color
   },
   messageInput: {
     height: 100,
-    textAlignVertical: 'top', // Ensure the message input expands vertically
+    textAlignVertical: 'top',
   },
 });
 
-export default TestimonialForm;
+export default AddTestimonial;
 
 
 // import React, { useState } from 'react';

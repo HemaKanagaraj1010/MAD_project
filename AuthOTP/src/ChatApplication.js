@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
@@ -7,6 +7,7 @@ import { useNavigation, useIsFocused } from "@react-navigation/native";
 export default function ChatApplication() {
     const [users, setUsers] = useState([]);
     const [userName, setUserName] = useState("");
+    const [messageCounts, setMessageCounts] = useState({});
     const navigation = useNavigation();
     const isFocused = useIsFocused();
     const currentUser = auth().currentUser;
@@ -19,7 +20,9 @@ export default function ChatApplication() {
                     id: doc.id,
                     ...doc.data(),
                 }));
-                setUsers(usersData);
+
+                // Fetch message counts for each user and sort them
+                await fetchMessageCounts(usersData);
             } catch (error) {
                 console.log("Error fetching users:", error);
             }
@@ -45,11 +48,62 @@ export default function ChatApplication() {
         }
     }, [isFocused, currentUser]);
 
-    const navigateToChat = (userId, userName) => {
-        navigation.navigate("ChatScreen", {
-            userId, // Pass the recipient's user ID
-            userName, // Pass the recipient's user name
-        });
+    const fetchMessageCounts = async (usersData) => {
+        try {
+            const counts = {};
+            for (const user of usersData) {
+                const messagesSnapshot = await firestore()
+                    .collection("messages")
+                    .where("receiverId", "==", user.id)
+                    .orderBy("timestamp", "desc")
+                    .limit(1)
+                    .get();
+                const message = messagesSnapshot.docs[0]?.data();
+                if (message) {
+                    const lastSeen = message.lastSeen || 0;
+                    const unreadMessages = await firestore()
+                        .collection("messages")
+                        .where("receiverId", "==", user.id)
+                        .where("timestamp", ">", lastSeen)
+                        .get();
+                    counts[user.id] = unreadMessages.size;
+                } else {
+                    counts[user.id] = 0;
+                }
+            }
+            setMessageCounts(counts);
+
+            // Sort users based on the time of the most recent message received
+            const sortedUsers = usersData.sort((a, b) => {
+                const lastMessageTimeA = counts[a.id] ? -Infinity : 0;
+                const lastMessageTimeB = counts[b.id] ? -Infinity : 0;
+                return lastMessageTimeB - lastMessageTimeA;
+            });
+            setUsers(sortedUsers);
+        } catch (error) {
+            console.log("Error fetching message counts:", error);
+        }
+    };
+
+    const navigateToChat = async (userId, userName) => {
+        try {
+            await firestore()
+                .collection("messages")
+                .where("receiverId", "==", currentUser.uid)
+                .where("senderId", "==", userId)
+                .get()
+                .then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        doc.ref.update({ lastSeen: Date.now() });
+                    });
+                });
+            navigation.navigate("ChatScreen", {
+                userId, // Pass the recipient's user ID
+                userName, // Pass the recipient's user name
+            });
+        } catch (error) {
+            console.log("Error updating last seen:", error);
+        }
     };
 
     const handleLogout = async () => {
@@ -58,6 +112,18 @@ export default function ChatApplication() {
             navigation.navigate("Login");
         } catch (error) {
             console.log("Error logging out:", error);
+        }
+    };
+
+    const getMessageCount = (userId) => {
+        return messageCounts[userId] || 0;
+    };
+
+    const broadcastMessage = async () => {
+        try {
+            navigation.navigate("BroadcastMessage");
+        } catch (error) {
+            console.log("Error navigating to BroadcastMessage:", error);
         }
     };
 
@@ -76,17 +142,31 @@ export default function ChatApplication() {
                 <FlatList
                     data={users}
                     keyExtractor={item => item.id}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            onPress={() => navigateToChat(item.id, item.name)}
-                            style={{ marginBottom: 5, borderRadius: 5, overflow: "hidden" }}
-                        >
-                            <View style={styles.itemContainer}>
-                                <Text style={styles.itemText}>{item.name}</Text>
-                            </View>
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        const messageCount = getMessageCount(item.id);
+                        return (
+                            <TouchableOpacity
+                                onPress={() => navigateToChat(item.id, item.name)}
+                                style={{ marginBottom: 5, borderRadius: 5, overflow: "hidden" }}
+                            >
+                                <View style={styles.itemContainer}>
+                                    <Text style={styles.itemText}>{item.name}</Text>
+                                    {messageCount > 0 && (
+                                        <View style={styles.badge}>
+                                            <Text style={styles.badgeText}>{messageCount}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
+                <TouchableOpacity
+                    onPress={broadcastMessage}
+                    style={styles.broadcastButton}
+                >
+                    <Text style={styles.broadcastButtonText}>Broadcast Message</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -108,8 +188,33 @@ const styles = StyleSheet.create({
         padding: 15,
         borderRadius: 30,
         backgroundColor: "rgba(0,0,0,1)",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     itemText: {
+        color: "white",
+        fontSize: 20,
+        fontWeight: "bold",
+    },
+    badge: {
+        backgroundColor: "red",
+        borderRadius: 10,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+    },
+    badgeText: {
+        color: "white",
+        fontSize: 12,
+    },
+    broadcastButton: {
+        backgroundColor: "#43A047",
+        borderRadius: 30,
+        padding: 15,
+        margin: 20,
+        alignItems: "center",
+    },
+    broadcastButtonText: {
         color: "white",
         fontSize: 20,
         fontWeight: "bold",
@@ -118,6 +223,8 @@ const styles = StyleSheet.create({
 
 
 
+
+//backup
 // import React, { useEffect, useState } from "react";
 // import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 // import firestore from "@react-native-firebase/firestore";
@@ -129,6 +236,7 @@ const styles = StyleSheet.create({
 //     const [userName, setUserName] = useState("");
 //     const navigation = useNavigation();
 //     const isFocused = useIsFocused();
+//     const currentUser = auth().currentUser;
 
 //     useEffect(() => {
 //         const fetchUsers = async () => {
@@ -146,7 +254,6 @@ const styles = StyleSheet.create({
 
 //         const fetchUserName = async () => {
 //             try {
-//                 const currentUser = auth().currentUser;
 //                 if (currentUser) {
 //                     const userDocument = await firestore()
 //                         .collection("users")
@@ -163,12 +270,12 @@ const styles = StyleSheet.create({
 //             fetchUsers();
 //             fetchUserName();
 //         }
-//     }, [isFocused]);
+//     }, [isFocused, currentUser]);
 
 //     const navigateToChat = (userId, userName) => {
 //         navigation.navigate("ChatScreen", {
-//             userId,
-//             userName,
+//             userId, // Pass the recipient's user ID
+//             userName, // Pass the recipient's user name
 //         });
 //     };
 
@@ -235,6 +342,9 @@ const styles = StyleSheet.create({
 //         fontWeight: "bold",
 //     },
 // });
+
+
+
 
 
 

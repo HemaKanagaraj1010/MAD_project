@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Animated, Image } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation
 
 const UserProfile = ({ route }) => {
   const [user, setUser] = useState(null);
   const { userId } = route.params;
   const [buttonAnimation] = useState(new Animated.Value(0));
+  const navigation = useNavigation(); // Initialize navigation
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const userRef = await firestore().collection('users').doc(userId).get();
         if (userRef.exists) {
-          setUser(userRef.data());
+          const userData = userRef.data();
+          // Exclude fields like contact information and location
+          const { contactInfo, location, ...filteredUserData } = userData;
+          setUser(filteredUserData);
         } else {
           console.error('User not found');
         }
@@ -25,8 +30,8 @@ const UserProfile = ({ route }) => {
   }, [userId]);
 
   const handleChatPress = () => {
-    // Handle chat button press action here
-    console.log('Chat button pressed');
+    // Navigate to ChatScreen with userId and userName as params
+    navigation.navigate('ChatScreen', { userId: userId, userName: user.name });
   };
 
   const animateButton = () => {
@@ -44,6 +49,12 @@ const UserProfile = ({ route }) => {
     ]).start();
   };
 
+  const getAvatarSource = (gender) => {
+    return gender === 'Male'
+      ? require('../assets/male_avatar.png')
+      : require('../assets/female_avatar.png');
+  };
+
   if (!user) {
     return (
       <View style={styles.container}>
@@ -57,21 +68,14 @@ const UserProfile = ({ route }) => {
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.title}>User Profile</Text>
-          <Image source={require('./images/profile_placeholder.jpg')} style={styles.profileImage} />
+          <Image source={getAvatarSource(user.gender)} style={styles.profileImage} />
           <View style={styles.userInfo}>
-            <Text style={styles.label}>Name:</Text>
-            <Text style={styles.info}>{user.name}</Text>
-            <Text style={styles.label}>Email:</Text>
-            <Text style={styles.info}>{user.email}</Text>
-            <Text style={styles.label}>Gender:</Text>
-            <Text style={styles.info}>{user.gender}</Text>
-            <Text style={styles.label}>Date of Birth:</Text>
-            <Text style={styles.info}>{user.dob}</Text>
-            <Text style={styles.label}>Register Number:</Text>
-            <Text style={styles.info}>{user.registerNumber}</Text>
-            <Text style={styles.label}>Batch:</Text>
-            <Text style={styles.info}>{user.batch}</Text>
-            {/* Add other user fields here */}
+            {Object.keys(user).map((field, index) => (
+              <View key={index}>
+                <Text style={styles.label}>{field.charAt(0).toUpperCase() + field.slice(1)}:</Text>
+                <Text style={styles.info}>{user[field]}</Text>
+              </View>
+            ))}
           </View>
         </View>
         <Animated.View
@@ -90,7 +94,7 @@ const UserProfile = ({ route }) => {
           ]}
         >
           <TouchableOpacity onPress={handleChatPress} onPressIn={animateButton}>
-            <Text style={styles.chatButtonText}>Message</Text>
+            <Image source={require('../assets/chat.png')} style={styles.chatIcon} />
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -142,18 +146,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   chatButton: {
-    backgroundColor: '#007bff',
-    borderRadius: 30,
-    width: 80,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    backgroundColor: 'transparent',
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
   },
-  chatButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  chatIcon: {
+    width: 70,
+    height: 70,
   },
 });
 

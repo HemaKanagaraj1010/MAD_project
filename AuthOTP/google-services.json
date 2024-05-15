@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "9964762135",
-    "project_id": "otpauthapp-5fb23",
-    "storage_bucket": "otpauthapp-5fb23.appspot.com"
+    "project_number": "463146622353",
+    "project_id": "otpauthapp-304a1",
+    "storage_bucket": "otpauthapp-304a1.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:9964762135:android:83f8c7d7d540aca2edd852",
+        "mobilesdk_app_id": "1:463146622353:android:cf0ef5560b350615a98e30",
         "android_client_info": {
           "package_name": "com.sukanahema.AuthOTP"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCxwNXlGIdVQcsp6j3LlrarxuVMLe_3ORk"
+          "current_key": "AIzaSyCzV2R2yAM2A5uu0dFcQ8kpqng-CDjwIOE"
         }
       ],
       "services": {

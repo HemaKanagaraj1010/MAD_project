@@ -23,6 +23,9 @@ import UserProfile from '../UserProfile';
 import ViewTestimonal from '../ViewTestimonal';
 import ChatApplication from '../ChatApplication';
 import ChatScreen from '../ChatScreen';
+import BroadcastMessage from '../BroadcastMessage';
+import TestimonialDetails from '../TestimonialDetails';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator(); // Create a Stack navigator
 
@@ -40,6 +43,8 @@ const HomeStack = () => {
       <Stack.Screen name="ViewTestimonal" component={ViewTestimonal} options={{headerShown: false}}/>
       <Stack.Screen name="ChatApplication" component={ChatApplication} options={{headerShown: false}}/>
       <Stack.Screen name="ChatScreen" component={ChatScreen} options={{headerShown: false}}/>
+      <Stack.Screen name="BroadcastMessage" component={BroadcastMessage} options={{headerShown: false}}/>
+      <Stack.Screen name="TestimonialDetails" component={TestimonialDetails} options={{headerShown: false}}/>
     </Stack.Navigator>
   );
 };
